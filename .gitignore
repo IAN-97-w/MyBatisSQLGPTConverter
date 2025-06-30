@@ -23,3 +23,6 @@ output/
 # 🗃 기타
 .DS_Store
 *.log
+
+# IntelliJ 설정 무시
+.idea/
