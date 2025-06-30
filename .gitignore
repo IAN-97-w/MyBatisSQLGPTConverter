@@ -1,0 +1,25 @@
+# 🐍 Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 🧪 가상환경
+venv/
+env/
+
+# 📄 설정 및 민감 정보
+config.json
+key.key
+secret/
+
+# 🧾 Diff 및 로그 파일
+__diffs__/
+conversion_errors.log
+
+# 📦 결과물 디렉토리 (선택적으로 무시)
+output/
+
+# 🗃 기타
+.DS_Store
+*.log
