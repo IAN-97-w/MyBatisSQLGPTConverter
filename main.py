@@ -46,6 +46,8 @@ This SQL is used inside a MyBatis XML file. Only return the converted SQL query 
 - Do not add any comments or descriptions
 - Do not change MyBatis variables like #{{param}} or ${{param}}
 - Preserve indentation as much as possible
+- **Preserve all MyBatis dynamic SQL tags such as <if>, <choose>, <when>, <otherwise>, <include>, <where>, <set>, <trim>, etc.**
+- **Do not modify or remove any MyBatis XML tags or expressions**
 
 SQL:
 {sql}
@@ -78,14 +80,27 @@ def generate_diff(original, converted):
 # 🔄 CDATA 처리
 
 def extract_inner_text_preserve_cdata(tag):
-    contents = tag.contents
-    if contents and isinstance(contents[0], CData):
-        return str(contents[0]), True
-    return tag.text.strip(), False
+    """
+    MyBatis 동적 태그(<include>, <if> 등)를 포함한 전체 SQL 블록을 문자열로 추출하는 함수.
+    CDATA 여부도 함께 반환.
+    """
+    # 태그 내부의 전체 XML 구조를 문자열로 추출 (MyBatis 태그 포함)
+    xml_inside = tag.decode_contents().strip()
+    # CDATA가 존재하는지 판단
+    is_cdata = any(isinstance(content, CData) for content in tag.contents)
+    return xml_inside, is_cdata
 
 def replace_inner_text_preserve_cdata(tag, new_text, was_cdata):
+    """
+    변환된 SQL을 다시 XML 태그 내부에 삽입하되,
+    원래 CDATA가 있었다면 CDATA로 감싸고,
+    아니면 그냥 텍스트로 삽입.
+    """
+    # 기존 내용 제거
     tag.clear()
+    # XML 이스케이프 해제
     clean_text = unescape(new_text.strip())
+    # CDATA가 원래 있었거나 <, > 등 태그 기호가 포함되어 있다면 CDATA로 감쌈
     if was_cdata or '<' in clean_text or '>' in clean_text:
         tag.append(CData("\n" + clean_text + "\n"))
     else:
