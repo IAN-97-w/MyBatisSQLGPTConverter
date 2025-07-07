@@ -38,7 +38,6 @@ def convert_sql_with_gpt(sql, source_db, target_db, client):
     prompt = f"""You are an expert in SQL migration. Convert the following SQL from {source_db.upper()} to {target_db.upper()}.
 
 This SQL is used inside a MyBatis XML file. Only return the converted SQL query itself, without any explanation, markdown formatting, or comments.
-
 - Only return the converted SQL statement itself, and nothing else.
 - The output must be strictly the converted query only — no wrapping code, no explanations, no PL/pgSQL, no syntax wrappers.
 - Do not use any Markdown code block syntax such as triple backticks (```), ```sql, or ```xml.
@@ -47,11 +46,12 @@ This SQL is used inside a MyBatis XML file. Only return the converted SQL query 
 - Preserve indentation as much as possible
 - Preserve all MyBatis dynamic SQL tags such as <if>, <choose>, <when>, <otherwise>, <include>, <where>, <set>, <trim>, etc.
 - Do not modify or remove any MyBatis XML tags or expressions
-- This SQL is from a MyBatis XML file. If CDATA sections are needed (e.g., to escape special characters like '<' or '&'), add them where appropriate.
-- If the original SQL is wrapped with CDATA, preserve the CDATA section exactly as-is — do not remove, reformat, or move it.
 - Do not wrap the whole SQL in CDATA unless absolutely necessary. Preserve original structure.
 - Do not wrap the entire SQL block in CDATA. Only wrap XML-sensitive characters such as <, >, or & with CDATA, and only if necessary — preserve CDATA at its original positions.
 - Do not escape XML characters like < or >. Always output them as raw characters, not as &lt; or &gt;.
+- Prefix all table names in the converted SQL with "TABLESPACE." (e.g., "SELECT * FROM USERS" → "SELECT * FROM TABLESPACE.USERS")
+- If the original SQL contains any CDATA sections (e.g., <![CDATA[>]]>), you must preserve them exactly as they are — same content, same position. Do not move, wrap, remove, or alter any CDATA blocks.
+- Do not wrap the entire SQL in a CDATA block. Only preserve or insert CDATA around specific characters if it was already present in the input.
 
 SQL:
 {sql}
@@ -129,7 +129,11 @@ def process_xml_file(filepath, input_dir, output_dir, diff_dir, error_log, sourc
             nonlocal changed
             tag, attrs, inner = match.groups()
             original_sql = inner.strip()
+            print(">>> original_sql")
+            print(original_sql)
             converted_sql = convert_sql_with_gpt(original_sql, source_db, target_db, client)
+            print(">>> converted_sql")
+            print(converted_sql)
             converted_sql = unescape(converted_sql)
 
             if converted_sql != original_sql:
